@@ -55,12 +55,12 @@ Upstream download and published SHA256:
 Use a separate copy of Gambatte for Windows to avoid reusing Linux `.o` files.
 Remove the ELF-only `-Wl,-version-script=$(version_script)` link flag in that
 copy's Makefile. Build `platform=windows` with the toolchain's
-`x86_64-w64-mingw32-clang` and `clang++`. Retain the C++17 and serial patches.
+`x86_64-w64-mingw32-clang` and `clang++`. Retain the C++17, serial and cosmetic render patches from `tools/bootstrap.py`.
 Put `gambatte_libretro.dll` in `client/bin/windows/`.
 
 Generate an import archive using LLVM dlltool: create a `.def` with
 `LIBRARY gambatte_libretro.dll`, `EXPORTS`, then its `retro_*` exports, including
-the four `retro_dqm_*` functions. `llvm-readobj --coff-exports` lists them.
+the five `retro_dqm_*` functions (including `retro_dqm_appearance`). `llvm-readobj --coff-exports` lists them.
 Run `x86_64-w64-mingw32-dlltool -d gambatte.def -l libgambatte_libretro.dll.a`.
 
 ```sh

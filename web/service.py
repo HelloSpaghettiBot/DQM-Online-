@@ -97,7 +97,7 @@ class Handler(BaseHTTPRequestHandler):
             self.end_headers()
             return
         if path == PREFIX + "/api/status":
-            status = {"online": False, "players": 0, "version": "0.2.0-alpha", "max_players": 32}
+            status = {"online": False, "players": 0, "version": "0.2.5-alpha", "max_players": 32}
             try:
                 recent = self.server.status_file.stat().st_mtime > time.time() - 10
                 if recent:

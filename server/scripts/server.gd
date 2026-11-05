@@ -1,4 +1,6 @@
 extends Node
+const Release = preload("res://shared/release.gd")
+const Appearance = preload("res://shared/appearance.gd")
 const Repository = preload("res://scripts/repository.gd")
 const KEY_LENGTH = 64
 @onready var net = $Net
@@ -67,7 +69,7 @@ func _ready() -> void:
 	net.request_received.connect(_request)
 	multiplayer.peer_connected.connect(func(id): connected_at[id] = Time.get_ticks_msec())
 	multiplayer.peer_disconnected.connect(_left)
-	print(JSON.stringify({"event": "listening", "bind": bind_address, "port": port, "storage": "sqlite", "transport": transport, "protocol": 2}))
+	print(JSON.stringify({"event": "listening", "bind": bind_address, "port": port, "storage": "sqlite", "transport": transport, "protocol": 2, "appearance_picker": true}))
 
 func _process(delta: float) -> void:
 	elapsed += delta
@@ -76,7 +78,7 @@ func _process(delta: float) -> void:
 		status_elapsed = 0.0
 		var file = FileAccess.open(status_path + ".tmp", FileAccess.WRITE)
 		if file != null:
-			file.store_string(JSON.stringify({"players": sessions.size(), "uptime_seconds": (Time.get_ticks_msec() - started_at) / 1000, "version": "0.2.0-alpha"}))
+			file.store_string(JSON.stringify({"players": sessions.size(), "uptime_seconds": (Time.get_ticks_msec() - started_at) / 1000, "version": Release.VERSION}))
 			file.close()
 			DirAccess.rename_absolute(status_path + ".tmp", status_path)
 	if elapsed < 0.1: return
@@ -147,6 +149,20 @@ func _request(id: int, method: String, p: Dictionary) -> void:
 			if message.is_empty() or message.length() > 240: return
 			for ch in message:
 				if ch.unicode_at(0) < 32: return
+			if message.begins_with("/look "):
+				var parts = message.split(" ", false)
+				if parts.size() != 3 or not parts[1].is_valid_int() or not parts[2].is_valid_int() or not Appearance.valid(int(parts[1]), int(parts[2])):
+					_send(id, "appearance_failed", {"message": "Choose an available sprite and color."})
+					return
+				var sprite = int(parts[1])
+				var palette = int(parts[2])
+				if not repository.set_appearance(sessions[id].id, sprite, palette):
+					_send(id, "appearance_failed", {"message": "Appearance could not be saved. Please retry."})
+					return
+				sessions[id].appearance = {"sprite": sprite, "palette": palette}
+				if latest_presence.has(id): latest_presence[id]["appearance"] = sessions[id].appearance.duplicate()
+				_send(id, "appearance", sessions[id].appearance)
+				return
 			for other in sessions: _send(other, "chat", {"name": sessions[id].username, "message": message})
 			audit.chat += 1
 		"invite":
@@ -248,6 +264,7 @@ func _request(id: int, method: String, p: Dictionary) -> void:
 			if p.facing < 0 or p.facing > 3 or p.sequence < 0: return
 			if latest_presence.has(id) and p.sequence <= latest_presence[id].sequence: return
 			p["name"] = sessions[id].username
+			p["appearance"] = sessions[id].appearance.duplicate()
 			p["received_at"] = Time.get_ticks_msec()
 			latest_presence[id] = p
 
@@ -273,9 +290,9 @@ func _login(id: int, p: Dictionary) -> void:
 		if active.id == account.id:
 			_error(id, "This account is already online.")
 			return
-	sessions[id] = {"id": account.id, "username": account.username, "slot": 0, "revision": 0, "save_token": "", "heartbeat_at": Time.get_ticks_msec()}
+	sessions[id] = {"id": account.id, "username": account.username, "slot": 0, "revision": 0, "save_token": "", "heartbeat_at": Time.get_ticks_msec(), "appearance": repository.appearance(account.id)}
 	audit.logins += 1
-	_send(id, "welcome", {"peer": id, "name": account.username, "protocol": 2})
+	_send(id, "welcome", {"peer": id, "name": account.username, "protocol": 2, "appearance": sessions[id].appearance, "appearance_picker": true})
 	_send_games(id)
 	_roster()
 	print(JSON.stringify({"event": "login", "peer": id, "active": sessions.size()}))

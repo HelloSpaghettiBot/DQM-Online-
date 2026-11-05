@@ -8,6 +8,7 @@
 #include "cc_resampler.h"
 #include "gambatte.h"
 #include "dqm_serial.h"
+#include "dqm_appearance.h"
 #include "gbcpalettes.h"
 #include "bootloader.h"
 #ifdef HAVE_NETWORK
@@ -57,8 +58,15 @@ static gambatte::video_pixel_t* video_buf;
 static gambatte::GB gb;
 static DqmSerial dqm_serial;
 extern "C" {
+RETRO_API void retro_dqm_appearance(const uint8_t *data, const uint8_t *colors, bool enabled) {
+  dqm::selected = enabled;
+  if (enabled) {
+    std::memcpy(dqm::tiles, data, 256);
+    for (unsigned i=0; i<4; ++i) dqm::palette[i] = colors[i*2] | (colors[i*2+1] << 8);
+  }
+}
 RETRO_API void retro_dqm_link_enable(bool value) { dqm_serial.enable(value); }
-RETRO_API void retro_dqm_link_attach(bool value) { gb.setSerialIO(value ? &dqm_serial : NULL); }
+RETRO_API void retro_dqm_link_attach(bool value) { dqm::linked = value; gb.setSerialIO(value ? &dqm_serial : NULL); }
 RETRO_API void retro_dqm_link_push(const uint8_t *data, int length) {
   for (int i = 0; i + 1 < length; i += 2) dqm_serial.push(data[i], data[i + 1]);
 }
@@ -2929,6 +2937,12 @@ size_t retro_get_memory_size(unsigned id)
 
 void retro_run()
 {
+   dqm::active = dqm::selected && !dqm::linked && static_cast<const uint8_t *>(gb.rambank0_ptr())[0x5db] == 1;
+   const uint8_t *actor = static_cast<const uint8_t *>(gb.oamram_ptr());
+   if (actor[0x140] & 4) dqm::active = false;
+   for (unsigned i=0; i<16; i+=4)
+      if (actor[i+2] > 15 || (actor[i+3] & 8)) dqm::active = false;
+
    /* libretro_samples_count and libretro_frames_count are
     * file-scope so they can be reset in retro_load_game,
     * retro_reset, and retro_unserialize. */

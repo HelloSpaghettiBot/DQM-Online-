@@ -28,6 +28,7 @@ def main():
                 'web/public/downloads/DQMOnline-linux.zip',
                 'web/public/downloads/DQMOnline-android.apk']
     for name in required: assert (stage / name).is_file(), f"Missing {name}"
+    expected_version = json.loads((stage / 'web/public/downloads/manifest.json').read_text())[0]['version']
     config = Path('/etc/nginx/sites-enabled/403world.com').resolve()
     before = config.read_bytes()
     marker = b'root /var/www/403world.com; index index.html;'
@@ -96,7 +97,7 @@ def main():
             try:
                 with urlopen('http://127.0.0.1:9045/DQM/api/status', timeout=2) as response:
                     status = json.load(response)
-                if status['online'] and json.loads((data / 'status.json').read_text()).get('version') == '0.2.0-alpha':
+                if status['online'] and json.loads((data / 'status.json').read_text()).get('version') == expected_version:
                     command('systemctl', 'is-active', '--quiet', 'dqmonline-web', 'dqmonline-game')
                     break
             except Exception: pass

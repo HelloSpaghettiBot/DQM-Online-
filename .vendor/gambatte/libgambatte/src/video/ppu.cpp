@@ -1,3 +1,4 @@
+// DQM Online modification, 2026-11-05: cosmetic player PPU sampling.
 //
 //   Copyright (C) 2010 by sinamas <sinamas at users.sourceforge.net>
 //
@@ -17,6 +18,7 @@
 //
 
 #include "ppu.h"
+#include "../../libretro/dqm_appearance.h"
 #include "savestate.h"
 #include <algorithm>
 #include <cstring>
@@ -291,8 +293,8 @@ static void doFullTilesUnrolledDmg(PPUPriv &p, int const xend, video_pixel_t *co
 					                         ? p.spriteList[nextSprite].line ^ 15
 					                         : p.spriteList[nextSprite].line     ) * 2;
 
-					reg0 = p.vram[(lcdcObj2x(p) ? (reg1 & ~16) | spline : reg1 | (spline & ~16))    ];
-					reg1 = p.vram[(lcdcObj2x(p) ? (reg1 & ~16) | spline : reg1 | (spline & ~16)) + 1];
+					reg0 = dqm::byte(p.vram, (lcdcObj2x(p) ? (reg1 & ~16) | spline : reg1 | (spline & ~16))    , p.spriteList[nextSprite].oampos);
+					reg1 = dqm::byte(p.vram, (lcdcObj2x(p) ? (reg1 & ~16) | spline : reg1 | (spline & ~16)) + 1, p.spriteList[nextSprite].oampos);
 
 					p.spwordList[nextSprite] = expand_lut[reg0 + (attrib << 3 & 0x100)]
 					                         + expand_lut[reg1 + (attrib << 3 & 0x100)] * 2;
@@ -488,10 +490,10 @@ static void doFullTilesUnrolledCgb(PPUPriv &p, int const xend, video_pixel_t *co
 				                         ? p.spriteList[nextSprite].line ^ 15
 				                         : p.spriteList[nextSprite].line     ) * 2;
 
-				reg0 = vram[(attrib << 10 & 0x2000)
-				          + (lcdcObj2x(p) ? (reg1 & ~16) | spline : reg1 | (spline & ~16))    ];
-				reg1 = vram[(attrib << 10 & 0x2000)
-				          + (lcdcObj2x(p) ? (reg1 & ~16) | spline : reg1 | (spline & ~16)) + 1];
+				reg0 = dqm::byte(vram, (attrib << 10 & 0x2000)
+				          + (lcdcObj2x(p) ? (reg1 & ~16) | spline : reg1 | (spline & ~16))    , p.spriteList[nextSprite].oampos);
+				reg1 = dqm::byte(vram, (attrib << 10 & 0x2000)
+				          + (lcdcObj2x(p) ? (reg1 & ~16) | spline : reg1 | (spline & ~16)) + 1, p.spriteList[nextSprite].oampos);
 
 				p.spwordList[nextSprite] = expand_lut[reg0 + (attrib << 3 & 0x100)]
 				                         + expand_lut[reg1 + (attrib << 3 & 0x100)] * 2;
@@ -600,6 +602,11 @@ static void doFullTilesUnrolledCgb(PPUPriv &p, int const xend, video_pixel_t *co
                   spPalette = p.spPalette + (sattrib >> 2 & 4);
                else
                   spPalette = p.spPalette + (sattrib & 7) * 4;
+               video_pixel_t customPalette[4];
+               if (dqm::actor(id, p.spriteMapper.oamram()[id+2]*16 + (sattrib << 10 & 0x2000))) {
+                  for (unsigned c=0;c<4;++c) customPalette[c]=dqm::color<video_pixel_t>(c);
+                  spPalette = customPalette;
+               }
 
 					if (!((attrib | sattrib) & bgprioritymask)) {
 						unsigned char  *const idt = idtab + pos;
@@ -791,7 +798,8 @@ static void plotPixel(PPUPriv &p) {
             if(p.dmgMode)//support gb games in gbc mode
                pixel = p.spPalette[(attrib >> 2 & 4) + spdata];
 				else
-               pixel = p.spPalette[(attrib & 7) * 4 + spdata];
+               pixel = dqm::actor(minId, p.spriteMapper.oamram()[minId+2]*16 + (attrib << 10 & 0x2000))
+                 ? dqm::color<video_pixel_t>(spdata) : p.spPalette[(attrib & 7) * 4 + spdata];
 			}
 		} else {
 			do {
@@ -971,8 +979,8 @@ namespace LoadSprites {
 			(  (p.spriteList[p.currentSprite].attrib & attr_yflip)
 			 ? p.spriteList[p.currentSprite].line ^ 15
 			 : p.spriteList[p.currentSprite].line         ) * 2;
-		p.reg0 = p.vram[(p.spriteList[p.currentSprite].attrib << 10 & p.cgb * 0x2000)
-		              + (lcdcObj2x(p) ? (p.reg1 * 16 & ~16) | spline : p.reg1 * 16 | (spline & ~16))];
+		p.reg0 = dqm::byte(p.vram, (p.spriteList[p.currentSprite].attrib << 10 & p.cgb * 0x2000)
+		              + (lcdcObj2x(p) ? (p.reg1 * 16 & ~16) | spline : p.reg1 * 16 | (spline & ~16)), p.spriteList[p.currentSprite].oampos);
 		inc(f3_, p);
 	}
 
@@ -991,8 +999,8 @@ namespace LoadSprites {
 			(  (p.spriteList[p.currentSprite].attrib & attr_yflip)
 			 ? p.spriteList[p.currentSprite].line ^ 15
 			 : p.spriteList[p.currentSprite].line         ) * 2;
-		p.reg1 = p.vram[(p.spriteList[p.currentSprite].attrib << 10 & p.cgb * 0x2000)
-		              + (lcdcObj2x(p) ? (p.reg1 * 16 & ~16) | spline : p.reg1 * 16 | (spline & ~16)) + 1];
+		p.reg1 = dqm::byte(p.vram, (p.spriteList[p.currentSprite].attrib << 10 & p.cgb * 0x2000)
+		              + (lcdcObj2x(p) ? (p.reg1 * 16 & ~16) | spline : p.reg1 * 16 | (spline & ~16)) + 1, p.spriteList[p.currentSprite].oampos);
 		inc(f5_, p);
 	}
 

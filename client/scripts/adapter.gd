@@ -16,7 +16,7 @@ func track_avatar(core: Object, state: int) -> void:
 	if oam.size() != 16 or lcd.is_empty() or (lcd[0] & 4) != 0: return
 	var origin = Vector2i(256, 256)
 	for i in range(0, 16, 4):
-		if oam[i + 2] > 11 or (oam[i + 3] & 8) != 0: return
+		if oam[i + 2] > 15 or (oam[i + 3] & 8) != 0: return
 		origin.x = mini(origin.x, int(oam[i + 1]) - 8)
 		origin.y = mini(origin.y, int(oam[i]) - 16)
 	if origin.x < 0 or origin.y < 0 or origin.x > 144 or origin.y > 128: return
@@ -47,9 +47,9 @@ func capture_avatar(core: Object, frame: Image, state: int) -> void:
 	if oam.size() != 16 or lcd.is_empty() or (lcd[0] & 4) != 0: return
 	var origin = Vector2i(256, 256)
 	for i in range(0, 16, 4):
-		# Verified Cobi actor is the first four 8x8 OAM entries, tile slots 0-11.
+		# Verified Cobi actor is the first four 8x8 OAM entries, tile slots 0-15.
 		# Reject any other layout rather than sampling a title/menu cursor.
-		if oam[i + 2] > 11 or (oam[i + 3] & 8) != 0: return
+		if oam[i + 2] > 15 or (oam[i + 3] & 8) != 0: return
 		origin.x = mini(origin.x, int(oam[i + 1]) - 8)
 		origin.y = mini(origin.y, int(oam[i]) - 16)
 	if origin.x < 0 or origin.y < 0 or origin.x > 144 or origin.y > 128: return

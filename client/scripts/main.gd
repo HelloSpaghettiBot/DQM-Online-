@@ -1,5 +1,7 @@
 extends Control
 const Rom = preload("res://scripts/rom.gd")
+const Appearance = preload("res://shared/appearance.gd")
+const AppearanceLibrary = preload("res://scripts/appearance_library.gd")
 const Adapter = preload("res://scripts/adapter.gd")
 const TouchControls = preload("res://scripts/touch_controls.gd")
 const Updater = preload("res://scripts/updater.gd")
@@ -104,6 +106,17 @@ var content_column: VBoxContainer
 var content_picker: FileDialog
 var content_message: Label
 var pending_content = ""
+var appearance_library = AppearanceLibrary.new()
+var appearance_panel: PopupPanel
+var appearance_list: ItemList
+var appearance_colors: OptionButton
+var appearance_preview: HBoxContainer
+var appearance_message: Label
+var appearance_apply: Button
+var appearance_selected = {"sprite": 0, "palette": Appearance.DEFAULT_PALETTE}
+var appearance_draft = appearance_selected.duplicate()
+var appearance_supported = false
+var appearance_pending_at = 0
 var legal_panel: PopupPanel
 
 
@@ -460,9 +473,10 @@ func _build_ui() -> void:
 	legal_column.add_child(_button("Full project notice", func(): OS.shell_open(Legal.URL)))
 	legal_column.add_child(_button("Source & licenses", func(): OS.shell_open(Legal.SOURCE_URL)))
 	legal_column.add_child(_button("Close", func(): legal_panel.hide(); if not rom_loaded: rom_prompt.popup_centered(Vector2i(460, 360))))
+	_build_appearance_ui()
 	save_status = _label("Progress saves automatically.", 19)
 	menu_column.add_child(save_status)
-	for item in [["Players", _open_players],
+	for item in [["Appearance", _open_appearance], ["Players", _open_players],
 		["Adventures", func(): _save_online("select")],
 		["Settings", func(): menu_panel.hide(); _release_game_input(); settings_panel.popup_centered(Vector2i(390, 390))],
 		["Account", func(): menu_panel.hide(); account_panel.popup_centered(Vector2i(380, 460))],
@@ -530,6 +544,94 @@ func _open_players() -> void:
 	_release_game_input()
 	players_panel.popup_centered(Vector2i(370, 360))
 
+func _build_appearance_ui() -> void:
+	appearance_panel = PopupPanel.new()
+	appearance_panel.name = "AppearancePanel"
+	add_child(appearance_panel)
+	var column = VBoxContainer.new()
+	column.custom_minimum_size = Vector2(510, 470)
+	column.add_theme_constant_override("separation", 10)
+	appearance_panel.add_child(column)
+	column.add_child(_heading("YOUR APPEARANCE"))
+	appearance_preview = HBoxContainer.new()
+	appearance_preview.alignment = BoxContainer.ALIGNMENT_CENTER
+	column.add_child(appearance_preview)
+	for i in 4:
+		var sprite = TextureRect.new()
+		sprite.custom_minimum_size = Vector2(56, 56)
+		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		appearance_preview.add_child(sprite)
+	appearance_colors = OptionButton.new()
+	appearance_colors.custom_minimum_size.y = 42
+	for i in Appearance.PALETTES: appearance_colors.add_item("Color %02d" % (i + 1), i)
+	appearance_colors.item_selected.connect(func(index): appearance_draft.palette = index; _refresh_appearance())
+	column.add_child(appearance_colors)
+	appearance_list = ItemList.new()
+	appearance_list.custom_minimum_size = Vector2(510, 230)
+	appearance_list.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	appearance_list.max_columns = 6
+	appearance_list.fixed_column_width = 80
+	appearance_list.fixed_icon_size = Vector2i(48, 48)
+	appearance_list.icon_mode = ItemList.ICON_MODE_TOP
+	appearance_list.add_theme_font_size_override("font_size", 20)
+	appearance_list.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	appearance_list.item_selected.connect(func(index): appearance_draft.sprite = Appearance.SPRITES[index]; _refresh_appearance())
+	column.add_child(appearance_list)
+	appearance_message = _label("", 21)
+	appearance_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	appearance_message.custom_minimum_size.x = 500
+	column.add_child(appearance_message)
+	var row = HBoxContainer.new()
+	column.add_child(row)
+	appearance_apply = _button("Use this appearance", _save_appearance, Vector2(310, 42))
+	row.add_child(appearance_apply)
+	row.add_child(_button("Close", func(): appearance_panel.hide(), Vector2(190, 42)))
+
+func _open_appearance() -> void:
+	menu_panel.hide()
+	_release_game_input()
+	appearance_draft = appearance_selected.duplicate()
+	appearance_colors.select(int(appearance_draft.palette))
+	appearance_list.clear()
+	for id in Appearance.SPRITES:
+		appearance_list.add_item("Cobi" if id == 0 else ("Tara" if id == 1 else "#%02d" % id))
+	appearance_list.select(Appearance.SPRITES.find(int(appearance_draft.sprite)))
+	appearance_list.ensure_current_is_visible()
+	_refresh_appearance()
+	appearance_message.text = "85 walking sprites · cosmetic only · saved on your account."
+	if appearance_library.records.is_empty(): appearance_message.text = "Import your Cobi's Journey ROM to view sprites."
+	elif not signed_in: appearance_message.text = "Sign in to save your appearance."
+	elif not appearance_supported: appearance_message.text = "The server needs an update before appearances can be saved."
+	appearance_apply.disabled = not signed_in or not appearance_supported or appearance_library.records.is_empty() or appearance_pending_at != 0
+	appearance_panel.popup_centered(Vector2i(540, 520))
+
+func _refresh_appearance() -> void:
+	appearance_colors.select(int(appearance_draft.palette))
+	if appearance_list.item_count > 0: appearance_list.select(Appearance.SPRITES.find(int(appearance_draft.sprite)))
+	for i in appearance_list.item_count:
+		appearance_list.set_item_icon(i, appearance_library.texture(Appearance.SPRITES[i], int(appearance_draft.palette), 0))
+	for i in 4:
+		appearance_preview.get_child(i).texture = appearance_library.texture(int(appearance_draft.sprite), int(appearance_draft.palette), i)
+
+func _save_appearance() -> void:
+	if not signed_in or not appearance_supported or appearance_pending_at != 0: return
+	appearance_pending_at = Time.get_ticks_msec()
+	appearance_apply.disabled = true
+	appearance_message.text = "Saving appearance…"
+	net.chat.rpc_id(1, "/look %d %d" % [appearance_draft.sprite, appearance_draft.palette])
+	await get_tree().create_timer(8.0).timeout
+	if appearance_pending_at != 0:
+		appearance_pending_at = 0
+		appearance_apply.disabled = false
+		appearance_message.text = "No confirmation yet. Please retry."
+
+func _apply_appearance() -> void:
+	if appearance_library.records.is_empty() and not current_rom.is_empty():
+		appearance_library.load_rom(FileAccess.get_file_as_bytes(current_rom))
+	if appearance_library.records.is_empty() or core == null: return
+	core.set_appearance(appearance_library.tiles(int(appearance_selected.sprite)), appearance_library.palettes[int(appearance_selected.palette)])
+
 func _open_content() -> void:
 	menu_panel.hide()
 	_release_game_input()
@@ -589,7 +691,7 @@ func _release_game_input() -> void:
 	if core != null: core.set_buttons(0)
 
 func _modal_open() -> bool:
-	return content_panel.visible or content_picker.visible or legal_panel.visible or menu_panel.visible or settings_panel.visible or players_panel.visible or account_panel.visible or invitation_dialog.visible or games_panel.visible or save_failure.visible or rom_dialog.visible or rom_prompt.visible or rom_error.visible or (updater != null and updater.panel.visible)
+	return appearance_panel.visible or content_panel.visible or content_picker.visible or legal_panel.visible or menu_panel.visible or settings_panel.visible or players_panel.visible or account_panel.visible or invitation_dialog.visible or games_panel.visible or save_failure.visible or rom_dialog.visible or rom_prompt.visible or rom_error.visible or (updater != null and updater.panel.visible)
 
 func _set_touch_preferences(analog: bool, scale_value: float) -> void:
 	config.set_value("client", "analog_controls", analog)
@@ -703,6 +805,7 @@ func _load_rom(path: String) -> void:
 		rom_error.popup_centered(Vector2i(460, 180))
 		return
 	core.stop()
+	appearance_library.load_rom(result.data)
 	rom_loaded = true
 	current_rom = imported
 	rom_prompt.hide()
@@ -778,6 +881,7 @@ func _apply_server_game(p: Dictionary) -> void:
 	if (not p.sram.is_empty() and not core.load_battery(p.sram)) or (not p.state.is_empty() and not core.load_state(p.state)):
 		_disconnected("Could not load this server save. No progress was overwritten.")
 		return
+	_apply_appearance()
 	game_revision = int(p.revision)
 	game_token = str(p.token)
 	game_loading = false
@@ -986,7 +1090,7 @@ func _disconnected(reason: String) -> void:
 	connect_button.text = "Sign in"
 	connection_fields.show()
 	registration_button.show()
-	for panel in [content_panel, content_picker, legal_panel, menu_panel, settings_panel, players_panel, games_panel, invitation_dialog, save_failure]: panel.hide()
+	for panel in [appearance_panel, content_panel, content_picker, legal_panel, menu_panel, settings_panel, players_panel, games_panel, invitation_dialog, save_failure]: panel.hide()
 	status.text = reason
 	_note(reason)
 	account_panel.popup_centered(Vector2i(380, 480))
@@ -1016,6 +1120,11 @@ func _event(kind: String, p: Dictionary) -> void:
 	match kind:
 		"welcome":
 			signed_in = true
+			appearance_supported = bool(p.get("appearance_picker", false))
+			appearance_selected = p.get("appearance", {"sprite": 0, "palette": Appearance.DEFAULT_PALETTE}).duplicate()
+			if not Appearance.valid(int(appearance_selected.sprite), int(appearance_selected.palette)):
+				appearance_selected = {"sprite": 0, "palette": Appearance.DEFAULT_PALETTE}
+			appearance_pending_at = 0
 			heartbeat_received_at = Time.get_ticks_msec()
 			heartbeat_sent_at = 0
 			heartbeat_sequence = 0
@@ -1030,6 +1139,17 @@ func _event(kind: String, p: Dictionary) -> void:
 			registration_button.hide()
 			account_panel.hide()
 			_note("Connected. Open Menu > Players to meet other adventurers.")
+		"appearance":
+			if not Appearance.valid(int(p.get("sprite", -1)), int(p.get("palette", -1))): return
+			appearance_selected = {"sprite": int(p.sprite), "palette": int(p.palette)}
+			appearance_pending_at = 0
+			_apply_appearance()
+			appearance_message.text = "Appearance saved to your account."
+			appearance_apply.disabled = false
+		"appearance_failed":
+			appearance_pending_at = 0
+			appearance_message.text = str(p.message)
+			appearance_apply.disabled = false
 		"games":
 			available_games = p.games
 			if not game_ready: _show_games()
@@ -1217,7 +1337,9 @@ func _render_presence(delta: float = 0.016) -> void:
 		var at = adapter.screen_position + view.position - Vector2(observation.x, observation.y)
 		view.root.visible = at.x >= 0 and at.y >= 0 and at.x <= 144 and at.y <= 128
 		if not view.root.visible: continue
-		view.sprite.texture = adapter.sprite_cache.get(remote.facing, adapter.sprite_cache.get(adapter.facing))
+		var look = remote.get("appearance", {"sprite": 0, "palette": Appearance.DEFAULT_PALETTE})
+		view.sprite.texture = appearance_library.texture(int(look.sprite), int(look.palette), int(remote.facing))
+		if view.sprite.texture == null: view.sprite.texture = adapter.sprite_cache.get(remote.facing, adapter.sprite_cache.get(adapter.facing))
 		view.sprite.position = (offset + at * scale_value).round()
 		view.sprite.size = (Vector2(16, 16) * scale_value).round()
 		_position_nameplate(view.plate, offset + (at + Vector2(8, 0)) * scale_value)

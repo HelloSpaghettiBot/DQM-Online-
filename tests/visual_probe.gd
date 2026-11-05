@@ -23,8 +23,25 @@ func _run() -> void:
 	while not main.game_ready and Time.get_ticks_msec() < deadline: await process_frame
 	assert(main.game_ready)
 	await create_timer(2.0).timeout
+	assert(main.appearance_supported)
+	main._open_appearance()
+	assert(main.appearance_list.item_count == 85 and main.appearance_colors.item_count == 59)
+	var look = {"sprite": 23 if option("dev-account") == "alice" else 80, "palette": 1 if option("dev-account") == "alice" else 5}
+	main.appearance_draft = look
+	main._refresh_appearance()
+	main._save_appearance()
+	var look_deadline = Time.get_ticks_msec() + 7000
+	while main.appearance_pending_at != 0 and Time.get_ticks_msec() < look_deadline: await process_frame
+	assert(main.appearance_selected == look)
+	await RenderingServer.frame_post_draw
+	root.get_texture().get_image().save_png(option("output").get_base_dir().path_join(option("dev-account") + "-appearance.png"))
+	main.appearance_panel.hide()
 	if main.signed_in: main._send_chat("Hello from " + option("dev-account") + "!")
 	await create_timer(2.0).timeout
+	assert(not main.remote_presence.is_empty())
+	for peer in main.remote_presence:
+		var look_received = main.remote_presence[peer].appearance
+		assert(int(look_received.sprite) == (80 if option("dev-account") == "alice" else 23))
 	main._set_chat_filter(true)
 	if option("movement-check") == "true": await _check_movement(main)
 	await RenderingServer.frame_post_draw

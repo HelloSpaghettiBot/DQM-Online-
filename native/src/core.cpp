@@ -17,6 +17,7 @@
 
 extern "C" {
 void retro_dqm_link_enable(bool);
+void retro_dqm_appearance(const uint8_t *, const uint8_t *, bool);
 void retro_dqm_link_attach(bool);
 void retro_dqm_link_push(const uint8_t *, int);
 int retro_dqm_link_poll(uint8_t *, int);
@@ -155,6 +156,7 @@ protected:
         ClassDB::bind_method(D_METHOD("load_state", "data"), &DqmCore::load_state);
         ClassDB::bind_method(D_METHOD("read_bus", "address", "length"), &DqmCore::read_bus);
         ClassDB::bind_method(D_METHOD("advance_frames", "count", "mask"), &DqmCore::advance_frames);
+        ClassDB::bind_method(D_METHOD("set_appearance", "tiles", "palette"), &DqmCore::set_appearance);
         ClassDB::bind_method(D_METHOD("set_link", "enabled"), &DqmCore::set_link);
         ClassDB::bind_method(D_METHOD("push_serial", "data"), &DqmCore::push_serial);
         ClassDB::bind_method(D_METHOD("poll_serial"), &DqmCore::poll_serial);
@@ -180,6 +182,7 @@ public:
     bool load_rom(PackedByteArray data) {
         if (!initialized || running || data.size() != 4194304) return false;
         if (loaded) retro_unload_game();
+        retro_dqm_appearance(nullptr, nullptr, false);
         memory.clear();
         retro_game_info game = {nullptr, data.ptr(), static_cast<size_t>(data.size()), nullptr};
         loaded = retro_load_game(&game);
@@ -263,6 +266,12 @@ public:
         buttons = mask;
         for (int i = 0; i < std::clamp(count, 0, 3600); ++i) retro_run();
         buttons = 0;
+    }
+    void set_appearance(PackedByteArray tiles, PackedByteArray palette) {
+        if (!initialized) return;
+        std::lock_guard<std::mutex> lock(core_mutex);
+        bool valid = tiles.size() == 256 && palette.size() == 8;
+        retro_dqm_appearance(valid ? tiles.ptr() : nullptr, valid ? palette.ptr() : nullptr, valid);
     }
     void set_link(bool enabled) {
         if (!initialized || !loaded) return;

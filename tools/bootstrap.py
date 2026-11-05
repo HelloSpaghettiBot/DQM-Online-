@@ -62,6 +62,11 @@ RETRO_API int retro_dqm_link_poll(uint8_t *data, int length) { return dqm_serial
     code = code.replace("(serialize_value_ >> (8 - serialCnt_))", "(serialize_value_ & ((1u << serialCnt_) - 1u))")
     code = code.replace("(serialize_value_ >> (8 - (serialCnt_ - targetCnt)))", "((serialize_value_ >> targetCnt) & ((1u << (serialCnt_ - targetCnt)) - 1u))")
     memory.write_text(code)
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("appearance_patch", ROOT / "native/patches/apply_appearance.py")
+    appearance_patch = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(appearance_patch)
+    appearance_patch.patch(folder, ROOT)
     # GPL-2.0 section 2(a): identify the modified upstream files and date.
     changes = {
         "libgambatte/libretro/libretro.cpp": "bounded DQM cable bridge",

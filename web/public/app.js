@@ -10,7 +10,7 @@ async function loadStatus() {
     const response = await fetch('/DQM/api/status', {cache: 'no-store'});
     if (!response.ok) throw new Error('Status unavailable');
     const status = await response.json();
-    document.querySelectorAll('[data-server-status]').forEach(el => el.textContent = status.online ? 'Alpha server online' : 'Server temporarily offline');
+    document.querySelectorAll('[data-server-status]').forEach(el => el.textContent = status.online ? 'Server online' : 'Server temporarily offline');
     document.querySelectorAll('[data-player-count]').forEach(el => el.textContent = String(status.players));
     document.querySelectorAll('.status-strip').forEach(el => el.classList.toggle('online', status.online));
     const downloads = document.getElementById('downloads');
@@ -20,7 +20,7 @@ async function loadStatus() {
         const release = (status.downloads || []).find(item => item.platform === platform);
         const row = safe('div', undefined, 'download-row');
         row.append(safe('span', platform, 'download-title'));
-        row.append(safe('span', release ? release.description : 'Build in preparation', 'download-meta'));
+        row.append(safe('span', release ? release.description : 'Download unavailable', 'download-meta'));
         if (release && /^\/DQM\/downloads\/[A-Za-z0-9_.-]+$/.test(release.url)) {
           const link = safe('a', 'Download ↓', 'button');
           link.href = release.url;

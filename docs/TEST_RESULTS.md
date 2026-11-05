@@ -175,3 +175,29 @@ The updated menu capture shows Quit game and no manual save button.
 - Existing player progress and the online-only campaign gate remain in use.
 - Both optional sources can be imported and removed locally. Regions, party
   gameplay and starter selection remain explicitly unfinished.
+
+
+## 0.2.5 account appearance
+
+- Actual local-ROM decoder loaded 98 graphics records and 59 palettes; 85 actor
+  layouts offer complete walking-sized appearances. All selectable IDs rendered
+  distinct PPU output (more than 75 distinct images) and four facing previews.
+- For each appearance, identical checkpoint/frame execution preserved SRAM,
+  inventory/party WRAM and world coordinates. Appearance sampling changes the
+  rendered OBJ pixels; the original ROM/RAM are not patched.
+- Two connected real desktop clients selected different sprites/colors, received
+  server acknowledgements and the other account's IDs through presence. Repeated
+  with Android layout, chat open, multitouch movement and turns. Nameplate nodes
+  remained stable and visible. No script errors. A known ObjectDB exit warning
+  from the existing screenshot harness remains.
+- SQLite reopen preserved appearance and kept other accounts and adventure
+  checkpoint revisions isolated. WebSocket registration/login test rejected
+  invalid appearance IDs and confirmed valid choices while retaining chat,
+  cable relay and revision-checked save behavior.
+- Online-progress suite passed autosave, acknowledged logout, server restart,
+  fresh-device resume, independent slots and loss-of-connection engine stop.
+- Linux/Windows/Android native render hooks built. Linux public libraries built
+  on Ubuntu 24.04. Android signing/metadata checked at packaging. Physical Android
+  and Windows device testing remain pending. Remote walk-frame animation is
+  still facing-based; larger effects/scenery and optional-ROM sprites are not
+  selectable appearances.

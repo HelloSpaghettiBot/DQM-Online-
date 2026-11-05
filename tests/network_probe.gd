@@ -4,6 +4,8 @@ var account = ""
 var players = []
 var events = []
 var welcomed = false
+var appearance_saved = false
+var appearance_rejected = false
 var linked = false
 var sent_chat = false
 var sent_invite = false
@@ -63,16 +65,20 @@ func _run() -> void:
 			for player in players:
 				if player.name == "bob": net.invite.rpc_id(1, player.peer, "Challenge")
 			sent_invite = true
-		if welcomed and received_chat and serial_received and backup_restored and rejected_stale:
+		if welcomed and received_chat and serial_received and backup_restored and rejected_stale and appearance_saved and appearance_rejected:
 			passed = true
-	print(JSON.stringify({"account": account, "welcome": welcomed, "chat": received_chat, "link_relay": serial_received, "server_save_reload": backup_restored, "stale_save_rejected": rejected_stale, "passed": passed}))
+	print(JSON.stringify({"account": account, "welcome": welcomed, "chat": received_chat, "link_relay": serial_received, "server_save_reload": backup_restored, "stale_save_rejected": rejected_stale, "appearance_saved": appearance_saved, "invalid_appearance_rejected": appearance_rejected, "passed": passed}))
 	quit(0 if passed else 1)
 
 func _event(kind: String, p: Dictionary) -> void:
 	match kind:
 		"welcome":
 			welcomed = true
+			net.chat.rpc_id(1, "/look 999999 0")
+			net.chat.rpc_id(1, "/look %d %d" % [23 if account == "alice" else 80, 1 if account == "alice" else 5])
 			net.load_game.rpc_id(1, 1)
+		"appearance": appearance_saved = int(p.sprite) == (23 if account == "alice" else 80) and int(p.palette) == (1 if account == "alice" else 5)
+		"appearance_failed": appearance_rejected = true
 		"game_loaded":
 			game_loaded = true
 			if backup_saved:

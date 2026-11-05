@@ -24,7 +24,9 @@ func open(path: String) -> bool:
 		"CREATE TABLE IF NOT EXISTS games (account_id INTEGER NOT NULL REFERENCES accounts(id), slot INTEGER NOT NULL CHECK(slot BETWEEN 1 AND 3), revision INTEGER NOT NULL DEFAULT 0, sram_hex TEXT NOT NULL DEFAULT '', state_hex TEXT NOT NULL DEFAULT '', updated_at TEXT NOT NULL DEFAULT (datetime('now')), PRIMARY KEY(account_id,slot));",
 		"INSERT OR IGNORE INTO games(account_id,slot,revision,sram_hex,updated_at) SELECT account_id,1,1,sram_hex,updated_at FROM backups WHERE length(sram_hex)=65536;",
 		"INSERT OR IGNORE INTO migrations VALUES (1);",
-		"INSERT OR IGNORE INTO migrations VALUES (2);"
+		"INSERT OR IGNORE INTO migrations VALUES (2);",
+        "CREATE TABLE IF NOT EXISTS appearances (account_id INTEGER PRIMARY KEY REFERENCES accounts(id), sprite INTEGER NOT NULL DEFAULT 0, palette INTEGER NOT NULL DEFAULT 18);",
+        "INSERT OR IGNORE INTO migrations VALUES (3);"
 	]:
 		if not db.query(statement):
 			error = "SQLite migration failed."
@@ -76,3 +78,11 @@ func save_game(account_id: int, slot: int, revision: int, sram: PackedByteArray,
 		db.query("ROLLBACK;")
 		return {"error": "Server save failed. Please retry."}
 	return {"revision": revision + 1}
+
+func appearance(account_id: int) -> Dictionary:
+	if db.query_with_bindings("SELECT sprite,palette FROM appearances WHERE account_id=?;", [account_id]) and db.query_result.size() == 1:
+		return db.query_result[0].duplicate()
+	return {"sprite": 0, "palette": 18}
+
+func set_appearance(account_id: int, sprite: int, palette: int) -> bool:
+	return db.query_with_bindings("INSERT INTO appearances(account_id,sprite,palette) VALUES(?,?,?) ON CONFLICT(account_id) DO UPDATE SET sprite=excluded.sprite,palette=excluded.palette;", [account_id, sprite, palette])

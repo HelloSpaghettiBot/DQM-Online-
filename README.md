@@ -4,7 +4,7 @@ An open-source Windows, Linux and Android client for playing a locally supplied
 **Dragon Warrior Monsters 2: Cobi’s Journey (USA)** ROM with an online HUD,
 nearby players, chat and account-based server adventures.
 
-**Development alpha · 0.2.4 · November 5, 2026**
+**Development alpha · 0.2.5 · November 5, 2026**
 
 [GitHub](https://github.com/HelloSpaghettiBot/DQM-Online-) ·
 [Play & download](https://403world.com/DQM/) ·
@@ -26,6 +26,13 @@ interface, account login, presence display and synchronization. This is an
 early alpha: original online battles, trades and multiplayer breeding have
 **not** been verified end to end. The project is working toward a fuller MMO
 experience; the current client is not a finished equivalent of PokeMMO.
+
+Menu → **Appearance** offers 85 walking sprite styles and 59 ROM color palettes,
+with a four-direction preview. The server saves your choice to your account and
+nearby players see it. Artwork is decoded locally from your verified Cobi ROM;
+only numeric cosmetic IDs travel over the network. Sprites do not change stats,
+monsters, inventory, saves, collisions, or story identity. Large effect/scenery
+records and optional-ROM appearances are not selectable yet.
 
 ## What works today
 

@@ -86,8 +86,8 @@ def main():
     if args.source_only: return
     releases = []
     for platform, required, description in [
-        ("Windows", ["DQMOnline.exe", "DQMOnline.pck", "gambatte_libretro.dll", "libdqmcore.windows.template_debug.x86_64.dll"], "Windows 10/11 · x64 · exported alpha, device testing pending"),
-        ("Linux", ["DQMOnline.x86_64", "DQMOnline.pck", "libgambatte_libretro.so", "libdqmcore.linux.template_debug.x86_64.so"], "Linux x64 · glibc 2.39+ · alpha"),
+        ("Windows", ["DQMOnline.exe", "DQMOnline.pck", "gambatte_libretro.dll", "libdqmcore.windows.template_debug.x86_64.dll"], "Windows 10/11 · 64-bit · Alpha"),
+        ("Linux", ["DQMOnline.x86_64", "DQMOnline.pck", "libgambatte_libretro.so", "libdqmcore.linux.template_debug.x86_64.so"], "Linux · 64-bit · glibc 2.39+"),
     ]:
         target = native_archive(platform, required)
         releases.append({"platform": platform, "url": "/DQM/downloads/" + target.name, "description": description,
@@ -96,7 +96,7 @@ def main():
     if not apk.is_file(): raise ValueError("Android APK has not been exported")
     target = PUBLIC / apk.name
     shutil.copy2(apk, target)
-    releases.append({"platform": "Android", "url": "/DQM/downloads/" + target.name, "description": "Android 10+ · arm64 · debug alpha, device testing pending",
+    releases.append({"platform": "Android", "url": "/DQM/downloads/" + target.name, "description": "Android 10+ · arm64 · Alpha",
                      "sha256": hashlib.sha256(target.read_bytes()).hexdigest(), "bytes": target.stat().st_size, "build": BUILD, "version": VERSION})
     (PUBLIC / "manifest.json").write_text(json.dumps(releases, indent=2) + "\n")
     print("Packaged Windows, Linux, Android and source; no local ROMs or private data included.")

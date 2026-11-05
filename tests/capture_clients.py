@@ -40,6 +40,9 @@ def run(rom,state,other,output,mobile=False,movement=False):
             for process in processes[1:]:process.wait(timeout=35)
             for name in ['alice','bob']:print((folder/(name+'.log')).read_text()[-900:])
             assert all(process.returncode==0 for process in processes[1:])
+            with sqlite3.connect(database) as db:
+                looks = db.execute('SELECT username,sprite,palette FROM appearances JOIN accounts ON account_id=accounts.id ORDER BY username').fetchall()
+                assert looks == [('alice',23,1),('bob',80,5)],looks
             assert all('SCRIPT ERROR' not in (folder/(name+'.log')).read_text() for name in ['alice','bob'])
         finally:
             for process in processes:
