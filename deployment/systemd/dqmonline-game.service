@@ -1,0 +1,26 @@
+[Unit]
+Description=DQMOnline game sessions and link relay
+After=network.target dqmonline-web.service
+Requires=dqmonline-web.service
+
+[Service]
+Type=simple
+User=dqmonline
+Group=dqmonline
+WorkingDirectory=/opt/dqmonline/current/server
+Environment=HOME=/var/lib/dqmonline
+Environment=XDG_DATA_HOME=/var/lib/dqmonline
+ExecStart=/opt/dqmonline/runtime/Godot_v4.6.3-stable_linux.x86_64 --headless --path /opt/dqmonline/current/server -- --db=/var/lib/dqmonline/dqmonline.db --transport=websocket --bind=127.0.0.1 --port=24778 --status=/var/lib/dqmonline/status.json --starter=/var/lib/dqmonline/farm-start
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=10
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/dqmonline
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=multi-user.target

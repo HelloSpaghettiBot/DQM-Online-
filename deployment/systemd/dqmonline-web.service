@@ -1,0 +1,22 @@
+[Unit]
+Description=DQMOnline accounts and website
+After=network.target
+
+[Service]
+Type=simple
+User=dqmonline
+Group=dqmonline
+WorkingDirectory=/opt/dqmonline/current
+ExecStart=/usr/bin/python3 /opt/dqmonline/current/web/service.py --database /var/lib/dqmonline/dqmonline.db --status /var/lib/dqmonline/status.json --public /opt/dqmonline/current/web/public --port 9045
+Restart=on-failure
+RestartSec=3
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/dqmonline
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+
+[Install]
+WantedBy=multi-user.target

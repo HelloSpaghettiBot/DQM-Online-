@@ -1,0 +1,17 @@
+import os
+env = SConscript('../.vendor/godot-cpp/SConstruct')
+env.Append(CPPPATH=['../.vendor/gambatte/libgambatte/libretro-common/include'])
+env.Append(CXXFLAGS=['-std=c++17'])
+if env['platform'] == 'linux':
+    env.Append(LIBPATH=['../client/bin'], LIBS=['gambatte_libretro'])
+    env.Append(LINKFLAGS=['-Wl,-rpath,$$ORIGIN'])
+elif env['platform'] == 'android':
+    env.Append(LIBPATH=['../client/bin/android/arm64'], LIBS=['retro'])
+elif env['platform'] == 'windows':
+    env.Append(LIBS=[env.File('../client/bin/windows/libgambatte_libretro.dll.a')])
+    if env.get('use_llvm'):
+        env['LINK'] = env['CXX']
+        env['LINKFLAGS'] = [flag for flag in env['LINKFLAGS'] if flag != '-lstdc++']
+target = '../client/bin/libdqmcore' + env['suffix'] + env['SHLIBSUFFIX']
+library = env.SharedLibrary(target=target, source=Glob('src/*.cpp'))
+Default(library)

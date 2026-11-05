@@ -1,0 +1,12 @@
+config_version=5
+
+[application]
+config/name="DQMOnline Server"
+run/main_scene="res://main.tscn"
+config/features=PackedStringArray("4.6", "GL Compatibility")
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+
+[network]
+limits/encode_buffer_max_size=1048576

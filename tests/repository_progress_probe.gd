@@ -1,0 +1,23 @@
+extends SceneTree
+func option(name: String) -> String:
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--" + name + "="): return arg.substr(name.length() + 3)
+	return ""
+func _initialize(): call_deferred("_run")
+func _run():
+	var repository = load("res://scripts/repository.gd").new()
+	assert(repository.open(option("db")))
+	repository.starter_state = FileAccess.get_file_as_bytes(option("starter")+".state")
+	repository.starter_sram = FileAccess.get_file_as_bytes(option("starter")+".srm")
+	assert(repository.db.query("INSERT INTO accounts(id,username,key_hash) VALUES(1,'starter_test',''),(2,'other_test','');"))
+	var fresh = repository.load_game(1,1)
+	assert(fresh.state == repository.starter_state and fresh.sram == repository.starter_sram and fresh.revision == 1)
+	var custom = PackedByteArray();custom.resize(2048);custom.fill(42)
+	assert(repository.save_game(1,1,1,repository.starter_sram,custom).revision == 2)
+	assert(repository.load_game(1,1).state == custom, "Starter replaced an existing save")
+	assert(repository.load_game(2,1).state == repository.starter_state, "New account inherited another player's progress")
+	assert(repository.save_game(1,1,1,repository.starter_sram,custom).has("error"), "Stale revision accepted")
+	assert(repository.load_game(1,1).revision == 2)
+	print("PASS: farm template applies only to empty adventures; existing saves, account isolation and revision checks preserved")
+	repository.db.close_db()
+	quit()
