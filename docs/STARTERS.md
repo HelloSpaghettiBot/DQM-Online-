@@ -5,7 +5,10 @@ first monster instead of receiving the default Slime/Slib.
 
 - Starter choices are restricted to ordinary first-world encounter species at
   level 1; no bosses, rare/advanced monsters, high levels or boosted stats.
-  Verify each candidate against the actual first-world encounter data.
+  Candidate shortlist: SpotSlime, CactiBall, Crestpent and TailEater. Their
+  presence in the Cobi Oasis world is documented by Rena Chan’s original
+  monster-location guide. Confirm their game IDs/base data in the local ROM
+  before enabling them. KingCobra, bosses and later-world species are excluded.
 - Choices apply only when creating a new server adventure. Existing adventures
   retain their progress, monster roster, inventory and intro state.
 - Skip intro enters normal gameplay after the required opening setup. The
@@ -23,3 +26,5 @@ The published 0.2.3 host already starts new adventures at the farm after the
 boat, but does not yet provide this expanded skip-intro/starter-choice flow.
 No starter-choice feature should be advertised as working until original-game
 battle and reload checks pass.
+
+Encounter reference: [Rena Chan’s original guide](https://gamefaqs.gamespot.com/gbc/525414-dragon-warrior-monsters-2-cobis-journey/faqs/15103).

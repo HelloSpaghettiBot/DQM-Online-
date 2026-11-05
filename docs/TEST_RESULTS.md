@@ -167,3 +167,11 @@ The updated menu capture shows Quit game and no manual save button.
   monster/inventory memory unchanged.
 - Optional ROMs are shown as imported/missing with region integration pending.
   This does not establish playable regions or cross-game monster compatibility.
+
+## Optional import release — 0.2.4
+
+- Base Cobi autosave, server restart, fresh-device resume, slot isolation and
+  heartbeat disconnection checks pass after adding optional import support.
+- Existing player progress and the online-only campaign gate remain in use.
+- Both optional sources can be imported and removed locally. Regions, party
+  gameplay and starter selection remain explicitly unfinished.

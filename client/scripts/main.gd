@@ -694,12 +694,12 @@ func _load_rom(path: String) -> void:
 		rom_error.popup_centered(Vector2i(460, 180))
 		return
 	var imported = profile_directory.path_join("cobi.gbc")
-	if not _atomic_write(imported, result.data):
-		rom_error.dialog_text = "Could not store the ROM on this device. Check free storage."
-		rom_error.popup_centered(Vector2i(460, 180))
-		return
 	if game_ready or game_loading or saving:
 		rom_error.dialog_text = "Log out before changing your local ROM. Your progress stays on the server."
+		rom_error.popup_centered(Vector2i(460, 180))
+		return
+	if not _atomic_write(imported, result.data):
+		rom_error.dialog_text = "Could not store the ROM on this device. Check free storage."
 		rom_error.popup_centered(Vector2i(460, 180))
 		return
 	core.stop()

@@ -4,7 +4,7 @@ An open-source Windows, Linux and Android client for playing a locally supplied
 **Dragon Warrior Monsters 2: Cobi’s Journey (USA)** ROM with an online HUD,
 nearby players, chat and account-based server adventures.
 
-**Development alpha · 0.2.3 · November 5, 2026**
+**Development alpha · 0.2.4 · November 5, 2026**
 
 [GitHub](https://github.com/HelloSpaghettiBot/DQM-Online-) ·
 [Play & download](https://403world.com/DQM/) ·
@@ -104,12 +104,16 @@ upgrade before automatic updates are available.
 The target is one MMO: optional local ROMs expand the shared world and keep the
 same account/character, rather than separate emulator campaigns. Iru (GBC) and
 Caravan Heart (GBA) identities are verified; their region/content integration is
-not yet playable. See [optional expansions](docs/EXPANSIONS.md).
+not yet playable. Menu → Optional ROMs can import and retain both sources locally;
+imports do not unlock their regions yet. See [optional expansions](docs/EXPANSIONS.md).
 
 - Campaign-wide presence, procedural key-world identity, camera/occlusion and
   transition behavior beyond the verified areas.
 - Original-game online PvP, monster/key trading and multiplayer breeding.
   A generic cable-byte test is not proof that these transactions work.
+- New-adventure setup: optional full intro skip and a level-1 starter from
+  ordinary first-world encounters. This selection flow is still in development;
+  see [starter requirements](docs/STARTERS.md).
 - Parties: follow the leader into the same world without owning its key;
   independent battles; EXP split evenly among members in that world;
   individual loot. See [the agreed party requirements](docs/PARTIES.md).

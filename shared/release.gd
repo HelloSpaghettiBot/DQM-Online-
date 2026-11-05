@@ -1,3 +1,3 @@
 extends RefCounted
-const BUILD = 6
-const VERSION = "0.2.3-alpha"
+const BUILD = 7
+const VERSION = "0.2.4-alpha"
